@@ -111,4 +111,58 @@ describe('ComparisonSlider', () => {
     fireEvent.mouseMove(document, { clientX: 500 });
     fireEvent.mouseUp(document);
   });
+
+  test('handles keyboard arrow controls', () => {
+    const { divider } = setupComponent();
+    
+    // Test left arrow
+    fireEvent.keyDown(divider, { key: 'ArrowLeft' });
+    expect(divider).toHaveStyleRule('left', '49%');
+    
+    // Test right arrow
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    expect(divider).toHaveStyleRule('left', '50%');
+  });
+
+  test('shows percentage indicator while dragging', () => {
+    const { getByTestId, divider } = setupComponent();
+    
+    // Start dragging
+    fireEvent.mouseDown(divider);
+    
+    const indicator = getByTestId('percentage-indicator');
+    expect(indicator).toBeInTheDocument();
+    expect(indicator).toHaveStyle({ opacity: '1' });
+    expect(indicator).toHaveTextContent('50%');
+  });
+
+  test('applies correct ARIA attributes', () => {
+    const { divider } = setupComponent();
+    
+    expect(divider).toHaveAttribute('role', 'slider');
+    expect(divider).toHaveAttribute('aria-valuemin', '0');
+    expect(divider).toHaveAttribute('aria-valuemax', '100');
+    expect(divider).toHaveAttribute('aria-valuenow', '50');
+    expect(divider).toHaveAttribute('aria-label', 'Image comparison slider');
+  });
+
+  test('applies drag styling when dragging', () => {
+    const { divider } = setupComponent();
+    
+    fireEvent.mouseDown(divider);
+    expect(divider).toHaveStyleRule('opacity', '1');
+    
+    fireEvent.mouseUp(document);
+    expect(divider).toHaveStyleRule('opacity', '0.8');
+  });
+
+  test('applies correct styles when dragging', () => {
+    const { divider } = setupComponent();
+    
+    fireEvent.mouseDown(divider);
+    expect(divider).toHaveStyle({ opacity: 1 });
+    
+    fireEvent.mouseUp(document);
+    expect(divider).toHaveStyle({ opacity: 0.8 });
+  });
 });
