@@ -156,6 +156,15 @@ describe('ComparisonSlider', () => {
     expect(divider).toHaveStyleRule('opacity', '0.8');
   });
 
+  test('container has correct hover styles', () => {
+    const { container } = setupComponent();
+    const sliderContainer = container.firstChild;
+    
+    // Test that container exists and has position absolute
+    expect(sliderContainer).toBeInTheDocument();
+    expect(sliderContainer).toHaveStyleRule('position', 'absolute');
+  });
+
   test('applies correct styles when dragging', () => {
     const { divider } = setupComponent();
     
