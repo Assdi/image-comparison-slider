@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
 const SliderContainer = styled.div`
@@ -10,6 +11,15 @@ const SliderContainer = styled.div`
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
+
+  @media (max-width: 768px) {
+    height: 300px;
+  }
+
+  @media (max-width: 480px) {
+    height: 200px;
+    border-radius: 4px;
+  }
 
   &:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
@@ -82,6 +92,15 @@ const Divider = styled.div`
   &:hover::after {
     transform: translate(-50%, -50%) scale(1.1);
   }
+
+  @media (max-width: 480px) {
+    width: 2px;
+
+    &::after {
+      width: 32px;
+      height: 32px;
+    }
+  }
 `;
 
 const PercentageIndicator = styled.div`
@@ -97,12 +116,44 @@ const PercentageIndicator = styled.div`
   pointer-events: none;
   opacity: ${(props) => (props.isVisible ? '1' : '0')};
   transition: opacity 0.2s ease;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
 `;
 
-const ComparisonSlider = ({ beforeImage, afterImage }) => {
+const ErrorMessage = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-align: center;
+`;
+
+const ComparisonSlider = ({ beforeImage, afterImage, maxWidth, height }) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState({ before: false, after: false });
+  const [imageErrors, setImageErrors] = useState({ before: false, after: false });
   const containerRef = useRef(null);
+
+  // Preload images
+  useEffect(() => {
+    const preloadImage = (src, type) => {
+      const img = new Image();
+      img.onload = () => setImagesLoaded((prev) => ({ ...prev, [type]: true }));
+      img.onerror = () => setImageErrors((prev) => ({ ...prev, [type]: true }));
+      img.src = src;
+    };
+
+    preloadImage(beforeImage, 'before');
+    preloadImage(afterImage, 'after');
+  }, [beforeImage, afterImage]);
 
   const handleKeyDown = (event) => {
     const step = 1;
@@ -155,15 +206,38 @@ const ComparisonSlider = ({ beforeImage, afterImage }) => {
     };
   }, [isDragging]);
 
+  const handleImageError = (type) => {
+    setImageErrors((prev) => ({ ...prev, [type]: true }));
+  };
+
+  if (imageErrors.before || imageErrors.after) {
+    return (
+      <SliderContainer style={{ maxWidth, height }}>
+        <ErrorMessage>
+          Failed to load {imageErrors.before && imageErrors.after ? 'images' : 'image'}
+        </ErrorMessage>
+      </SliderContainer>
+    );
+  }
+
+  if (!imagesLoaded.before || !imagesLoaded.after) {
+    return (
+      <SliderContainer style={{ maxWidth, height }}>
+        <ErrorMessage>Loading images...</ErrorMessage>
+      </SliderContainer>
+    );
+  }
+
   return (
-    <SliderContainer ref={containerRef}>
+    <SliderContainer ref={containerRef} style={{ maxWidth, height }}>
       <ImageContainer>
-        <BeforeImage src={beforeImage} alt="Before" />
+        <BeforeImage src={beforeImage} alt="Before" onError={() => handleImageError('before')} />
         <AfterImage
           src={afterImage}
           alt="After"
           sliderPosition={sliderPosition}
           style={{ transition: isDragging ? 'none' : 'clip-path 0.1s ease-out' }}
+          onError={() => handleImageError('after')}
         />
       </ImageContainer>
       <Divider
@@ -189,6 +263,18 @@ const ComparisonSlider = ({ beforeImage, afterImage }) => {
       </PercentageIndicator>
     </SliderContainer>
   );
+};
+
+ComparisonSlider.propTypes = {
+  beforeImage: PropTypes.string.isRequired,
+  afterImage: PropTypes.string.isRequired,
+  maxWidth: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  height: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+};
+
+ComparisonSlider.defaultProps = {
+  maxWidth: 800,
+  height: 400,
 };
 
 export default ComparisonSlider;
